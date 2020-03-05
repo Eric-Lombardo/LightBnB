@@ -89,7 +89,7 @@ exports.getAllReservations = getAllReservations;
 const getAllProperties = function(options, limit = 10) {
   let paramsArr = [];
   // let queryStr = `SELECT * FROM properties`
-  let queryStr = `SELECT properties.*, AVG(rating) AS average_rating FROM properties JOIN property_reviews ON properties.id = property_reviews.property_id`
+  let queryStr = `SELECT properties.*, AVG(rating) AS average_rating FROM properties LEFT JOIN property_reviews ON properties.id = property_reviews.property_id`
 
   // check to make sure options arent empty
   if (!options.city && !options.owner_id && !options.minimum_price_per_night && !options.maximum_price_per_night && !options.minimum_rating) {
@@ -170,9 +170,36 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  // const propertyId = Object.keys(properties).length + 1;
+  // property.id = propertyId;
+  // properties[propertyId] = property;
+  // return Promise.resolve(property);
+
+  let owner_id = property.owner_id;
+  let title = property.title;
+  let description = property.description;
+  let thumbnail = property.thumbnial_photo_url;
+  let cover = property.cover_photo_url;
+  let cost_per_night = property.cost_per_night * 100;
+  let street = property.street;
+  let city = property.city;
+  let province = property.province;
+  let postal = property.post_code;
+  let country = property.country;
+  let parking = property.parking_spaces;
+  let bathroom = property.number_of_bathrooms;
+  let bedroom = property.number_of_bedrooms;
+
+  let propertyOptArr = [owner_id, title, description, thumbnail, 
+    cover, cost_per_night, street, city, province,
+    postal, country, parking, bathroom, bedroom]
+
+  return pool.query(`
+    INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, 
+      cover_photo_url, cost_per_night, street, city, province,
+      post_code, country, parking_spaces, number_of_bathrooms, number_of_bedrooms) 
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+    RETURNING *;
+  `, propertyOptArr).then(res => res.rows);
 }
 exports.addProperty = addProperty;
